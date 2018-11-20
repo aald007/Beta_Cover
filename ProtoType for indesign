@@ -50,3 +50,21 @@ Array.prototype.getItemByProp = function (prop) {
     }
     return found;
 };
+
+
+Object.prototype.create = function(geoM, prop){       //geoM =  [y, x, height, width];  prop =  {prop:key}
+    var obj = this.add();
+    if(arguments[0] !== undefined){
+        var gMet = arguments[0];
+        obj.geometricBounds = [gMet[0], gMet[1], gMet[0] + gMet[2], gMet[1] + gMet[3]];
+        obj.applyObjectStyle(app.documents.item(0).objectStyles[0]);
+    }
+    if(arguments[1] !== undefined){
+        for (var key in prop) {
+            if(obj.hasOwnProperty (key)){
+                obj[key] = prop[key];
+            }
+        }
+    }
+    return obj;
+};
