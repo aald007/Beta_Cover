@@ -1,0 +1,52 @@
+Object.prototype.getItemByProp = function (prop) {
+    var allPageItems;
+    try {
+        allPageItems = this.pageItems;
+    }
+    catch (e) {
+        allPageItems = this.everyItem().getElements();
+    }
+    var found =[];
+    for (var i = 0; i < allPageItems.length; i++) {
+        var tempState = true;
+        for (var key in prop) {
+            var item = allPageItems[i];
+            var itemPorp = item[key];
+            var porpVal = prop[key];
+            if (item.hasOwnProperty(key)) {
+                if (itemPorp != porpVal) {
+                    tempState = false;
+                }
+            }
+        }
+        if (tempState) {
+            found.push(allPageItems[i]);
+        }
+    }
+    return found;
+};
+
+
+Array.prototype.getItemByProp = function (prop) {
+    var allPageItems = this;
+    var found =[];
+    for (var i = 0; i < allPageItems.length; i++) {
+        if (allPageItems[i] instanceof Object) {
+            var tempState = true;
+            for (var key in prop) {
+                var item = allPageItems[i];
+                var itemPorp = item[key];
+                var porpVal = prop[key];
+                if (item.hasOwnProperty(key)) {
+                    if (itemPorp != porpVal) {
+                        tempState = false;
+                    }
+                }
+            }
+            if (tempState) {
+                found.push(allPageItems[i]);
+            }
+        }
+    }
+    return found;
+};
