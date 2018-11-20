@@ -1,0 +1,286 @@
+if ((app.documents.length != 0) && ((app.activeDocument.pages.length == 1) ||(app.activeDocument.pages.length == 3) ||(app.activeDocument.pages.length == 5))) {
+    var doc = app.activeDocument;
+    doc.save();
+    var docName = (doc.name.replace(RegExp("\\.(.+)$", "g"), ""));
+    var docFullName = doc.name;
+    var docPath = doc.filePath;
+    var bookIdArray = docName.split("_");
+    var bookIdFromPath = docPath.fsName.toString().split("\\")[3];
+    var layers = doc.layers;
+    var items = doc.pageItems;
+    var mastPages = doc.masterSpreads;
+    var pageLength = app.activeDocument.pages.length;
+    var pstName = "psName";
+    var psStatus = false;
+    var x, myCopyTxt, printTxt;
+    
+    
+    doc.viewPreferences.horizontalMeasurementUnits = MeasurementUnits.millimeters;
+    doc.viewPreferences.verticalMeasurementUnits = MeasurementUnits.millimeters;
+    doc.zeroPoint =[0, 0];
+    doc.pageItemDefaults.strokeColor = "None";
+    doc.pageItemDefaults.strokeWeight = "0";
+    doc.pageItemDefaults.fillColor = "None";
+    doc.textDefaults.appliedParagraphStyle = doc.paragraphStyles.item(0);
+    doc.textDefaults.appliedCharacterStyle = doc.characterStyles.item(0);
+    doc.pageItemDefaults.appliedGraphicObjectStyle = doc.objectStyles.item(0);
+    doc.pageItemDefaults.appliedTextObjectStyle = doc.objectStyles.item(0);
+    app.activeWindow.activePage = doc.pages[0];
+    doc.documentPreferences.facingPages = true;
+    doc.layoutAdjustmentPreferences.enableLayoutAdjustment = false;
+    doc.guidePreferences.guidesLocked = false;
+    
+    /// PATH
+    /////////////////////////////////////////////////////////////////////////////////////////
+    var ImgResizeTool = File("/ImageMagick1/convert.exe");
+    var batchFile = File("d:/Img.bat");
+    var psPath = Folder ("d:/");
+    
+    
+    var OFCPsIn = File(psPath + "/" + docFullName.replace(".indd", "") + "_OFC.ps");
+    //var OFCPsIn= File("D:\\" + bookId + "_OFC.ps");
+    var uploadPath = Folder(docPath);
+    
+    
+    
+    var PDFPathName = File (docPath + "/" + docFullName.replace("_Print.indd", "_OFC.pdf"));
+    var JPEGPathName = File (uploadPath + "/" + docFullName.replace(".indd", "_CoverFigure.jpg"));
+    var TIFFpathName = File (uploadPath + "/" + docFullName.replace(".indd", "_CoverFigure.tiff"));
+       
+        
+    layers.everyItem().locked = false;
+    
+    //Remove Unwanted Layers
+    for (var i = layers.length - 1; i >= 0; i--) {
+        if (layers[i].pageItems.length == 0 || layers[i].visible == false) {
+            layers[i].remove();
+        }
+    }
+    
+    //Unlock Object
+    for (var a = 0; a < items.length; a++) {
+        items[a].locked = false;
+    }
+    
+    
+    if (pageLength == 1) {
+        
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        var mastPages = doc.masterSpreads;
+        for (var m = 0; m < mastPages.length;++ m) {
+            var currentPages = mastPages[m].pages;
+            for (var n = 0; n < currentPages.length;++ n) {
+                currentPages[n].marginPreferences.top = doc.pages[0].marginPreferences.top;
+                currentPages[n].marginPreferences.bottom = doc.pages[0].marginPreferences.bottom;
+                currentPages[n].marginPreferences.left = doc.pages[0].marginPreferences.left;
+                currentPages[n].marginPreferences.right = doc.pages[0].marginPreferences.right;
+            }
+        }
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+        var g = doc.pages.item(0).marginPreferences.columnGutter;
+        var h = doc.documentPreferences.pageHeight;
+        var w = doc.documentPreferences.pageWidth;
+        var myItems = doc.pages[0].pageItems;
+        if (myItems.length != 1) {
+            doc.pages[0].groups.add(myItems);
+        }
+        app.select(myItems);
+        app.cut();
+        x = doc.pages[0].rectangles.add({
+            geometricBounds:[0, ((w / 2) + (g / 2)), h, w]
+        });
+        x.applyObjectStyle(doc.objectStyles.item(0), true, true);
+        x.strokeColor = "None";
+        doc.align (x, AlignOptions.RIGHT_EDGES, AlignDistributeBounds.PAGE_BOUNDS);
+        app.select(myItems);
+        app.pasteInto();
+        var newmyItems = doc.pages[0].pageItems;
+        app.select(newmyItems);
+        spineResize(app.selection[0].geometricBounds[3] - app.selection[0].geometricBounds[1], app.selection[0].geometricBounds[2] - app.selection[0].geometricBounds[0]);
+        doc.align (app.selection[0], AlignOptions.HORIZONTAL_CENTERS, AlignDistributeBounds.PAGE_BOUNDS);
+        doc.align (app.selection[0], AlignOptions.VERTICAL_CENTERS, AlignDistributeBounds.PAGE_BOUNDS);
+    } else if (pageLength == 3) {
+        
+        app.selection = null;
+        var pItems = app.windows[0].activeSpread.pageItems;
+        app.select (pItems, SelectionOptions.ADD_TO);
+        app.menuActions.itemByID(118844).invoke();
+        app.cut();
+        var pageh = doc.pages[-1].bounds[2];
+        var sw = doc.pages[-2].bounds[3];
+        var ew = doc.pages[-1].bounds[3];
+        x = doc.pages[-1].rectangles.add({
+            geometricBounds:[0, sw, pageh, ew]
+        });
+        x.applyObjectStyle(doc.objectStyles.item(0), true, true);
+        x.strokeColor = "None";
+        app.select(x);
+        x.move(doc.pages[-1]);
+        doc.align (x, AlignOptions.HORIZONTAL_CENTERS, AlignDistributeBounds.PAGE_BOUNDS);
+        doc.align (x, AlignOptions.VERTICAL_CENTERS, AlignDistributeBounds.PAGE_BOUNDS);
+        app.pasteInto();
+        doc.pages[0].remove();
+        doc.pages[0].remove();
+    } else if (pageLength == 5) {
+        
+        app.selection = null;
+        pItems = app.windows[0].activeSpread.pageItems;
+        app.select (pItems, SelectionOptions.ADD_TO);
+        app.menuActions.itemByID(118844).invoke();
+        app.cut();
+        pageh = doc.pages[-1].bounds[2];
+        sw = doc.pages[-3].bounds[3];
+        ew = doc.pages[-1].bounds[3];
+        x = doc.pages[-1].rectangles.add({
+            geometricBounds:[0, sw, pageh, ew]
+        });
+        x.applyObjectStyle(doc.objectStyles.item(0), true, true);
+        x.strokeColor = "None";
+        x.move(doc.pages[-1]);
+        doc.align (x, AlignOptions.HORIZONTAL_CENTERS, AlignDistributeBounds.PAGE_BOUNDS);
+        doc.align (x, AlignOptions.RIGHT_EDGES, AlignDistributeBounds.PAGE_BOUNDS);
+        app.select(x);
+        app.pasteInto();
+        doc.pages[0].remove();
+        doc.pages[0].remove();
+        doc.pages[0].remove();
+    }
+    
+    Overset();
+    
+    
+    if ((pageLength == 1) ||(pageLength == 3)) {
+        app.pdfExportPreferences.pageRange = "1";
+        doc.exportFile(ExportFormat.pdfType, PDFPathName, false, "High Quality Print");
+    } else if (pageLength == 5) {
+        var pre = app.pdfExportPresets.itemByName("[High Quality Print]");
+        var exportNewSet = app.pdfExportPresets.add();
+        exportNewSet.properties = pre.properties;
+        exportNewSet.name = "SpreadExport";
+        exportNewSet.exportReaderSpreads = true;
+        app.pdfExportPreferences.pageRange = PageRange.ALL_PAGES;
+        doc.exportFile(ExportFormat.pdfType, PDFPathName, false, exportNewSet);
+        exportNewSet.remove();
+    }
+    
+    doc.close(SaveOptions.no);
+    
+    if (PDFPathName.exists) {
+        importPDF();
+        execBatFile();
+        PDFPathName.remove();
+    } else {
+        alert("Problem while creating OFC PDF");
+    }
+    alert("Completed");
+} else {
+    alert ("Please Open a Cover");
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// Functions
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+function createPs() {
+    //doc.printPreferences.activePrinterPreset = app.printerPresets.item(pstName);
+    //app.printerPresets.itemByName(pstName).paperSize = PaperSizes.CUSTOM;
+    doc.printPreferences.printFile = OFCPsIn;
+    doc.printPreferences.printSpreads = true;
+    doc.print(false);
+    psStatus = true;
+}
+*/
+
+function importPDF() {
+    var jDoc = app.documents.add();
+    jDoc.documentPreferences.pageHeight = "500 px";
+    jDoc.documentPreferences.pageWidth = "198.48 px";
+    
+    app.pdfPlacePreferences.pdfCrop = PDFCrop.CROP_TRIM;
+    var h = jDoc.documentPreferences.pageHeight;
+    var w = jDoc.documentPreferences.pageWidth;
+    var rect = jDoc.pages[0].rectangles.add({
+        geometricBounds:[0, 0, h, w]
+    });
+    rect.strokeColor = "None";
+    rect.place(File(PDFPathName), false);
+    rect.fit(FitOptions.PROPORTIONALLY);
+    rect.fit(FitOptions.FRAME_TO_CONTENT);
+    
+    ///JPEG Creation
+    /////////////////////////////////////////////////////////////////////////////////////////
+    app.jpegExportPreferences.jpegQuality = JPEGOptionsQuality.MAXIMUM;
+    app.jpegExportPreferences.exportResolution = 300;
+    app.jpegExportPreferences.jpegColorSpace = JpegColorSpaceEnum.RGB;
+    rect.exportFile(ExportFormat.JPG, JPEGPathName, false);
+    /////////////////////////////////////////////////////////////////////////////////////////
+    jDoc.close(SaveOptions.no);
+}
+
+function execBatFile() {
+    batchFile.open("w");
+    batchFile.encoding = "UTF-8";
+    batchFile.seek(0, 2);
+    batchFile.writeln("\"" + ImgResizeTool.fsName + "\"" + " " + "-density 300 -compress LZW" + " " + "\"" + JPEGPathName.fsName + "\"" + " " + "-quality 100 -resize 827" + " " + "\"" + TIFFpathName.fsName + "\"" + "\n");
+    batchFile.writeln("TIMEOUT /T 1 \n");
+    batchFile.close();
+    TIFFpathName.remove();
+    if (ImgResizeTool.exists) {
+        batchFile.execute();
+        var timeCount = 0;
+        do {
+            $.sleep(1000);
+            timeCount += 1;
+            //$.writeln(timeCount)
+            if (timeCount % 30 == 0) {
+                if (confirm ("Tool not responding or Slow. \rDo you want to quit this process?", undefined, "Generating Tiff") == true) {
+                    break;
+                }
+            }
+        }
+        while (!TIFFpathName.exists );
+        batchFile.remove();
+        
+        try {
+            if (JPEGPathName.exists) {
+                TIFFpathName.parent.execute();
+            }
+        }
+        catch (e) {
+        }
+    } else {
+        batchFile.remove();
+    }
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+function Overset() {
+    var pageItems = doc.allPageItems;
+    while (x = pageItems.pop()) {
+        if (x. constructor.name == "TextFrame") {
+            if (x.overflows) {
+                if (x.parentPage != null) {
+                    app.select(x);
+                    alert("Overset Found.");
+                    $.sleep(3000);
+                    doc.close(SaveOptions.NO);
+                    exit(0);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+
+function spineResize(a, b) {
+    var spinevalueW = a *(2.83465);
+    /* value in mm */
+    var spinevalueH = b *(2.83465);
+    doc.pages[0].resize (CoordinateSpaces.INNER_COORDINATES, AnchorPoint.CENTER_ANCHOR, ResizeMethods.REPLACING_CURRENT_DIMENSIONS_WITH,[spinevalueW, spinevalueH]);
+}
